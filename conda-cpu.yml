@@ -13,3 +13,4 @@ dependencies:
     - absl-py
     - easydict
     - pillow
+    - pytest==6.2.2

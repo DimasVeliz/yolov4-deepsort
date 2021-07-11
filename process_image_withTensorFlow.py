@@ -30,9 +30,20 @@ flags.DEFINE_float('score', 0.50, 'score threshold')
 flags.DEFINE_boolean('dont_show', False, 'dont show image output')
 
 
+def buildObjectDetected(class_id, confidence, x, y, x_plus_w, y_plus_h, classes):
+    label = str(classes[class_id])
+    obj={    }
+    obj["class"]=label
+    obj["confidence"]=confidence
+    obj["x"]=x
+    obj["y"]=y
+    obj["height"]=y_plus_h
+    obj["width"]=x_plus_w
 
 
-def process_frame(imagePath,saved_model_loaded,infer,STRIDES, ANCHORS, NUM_CLASS, XYSCALE,input_size):
+    return obj
+
+def do_image_processing(imagePath,saved_model_loaded,infer,STRIDES, ANCHORS, NUM_CLASS, XYSCALE,input_size):
 
     
 
@@ -104,7 +115,7 @@ def process_frame(imagePath,saved_model_loaded,infer,STRIDES, ANCHORS, NUM_CLASS
     scores = np.delete(scores, deleted_indx, axis=0)
 
     
-    
+    response=[]
     
 
     for index in range(len(classes)):
@@ -114,19 +125,23 @@ def process_frame(imagePath,saved_model_loaded,infer,STRIDES, ANCHORS, NUM_CLASS
         row=int(bbox[1])
         width=col+int(bbox[2])
         heigth=row+ int(bbox[3])
-        cv2.rectangle(frame, (col,row), (width, heigth), (255,0,255), 2)
+        newObj=buildObjectDetected(classes[index], scores[i], col, row, width, heigth, class_names)
+        response.append(newObj)
+        #cv2.rectangle(frame, (col,row), (width, heigth), (255,0,255), 2)
      
-        cv2.putText(frame, class_name,(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
+        #cv2.putText(frame, class_name,(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
     
-    result = np.asarray(frame)
-    result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    #result = np.asarray(frame)
+    #result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     
-    if not FLAGS.dont_show:
-        cv2.imshow("Output Video", result)        
+    #if not FLAGS.dont_show:
+        #cv2.imshow("Output Video", result)        
+#    
+    #if cv2.waitKey(0) & 0xFF == ord('q'): 
+        #cv2.destroyAllWindows()
+        #return
     
-    if cv2.waitKey(0) & 0xFF == ord('q'): 
-        cv2.destroyAllWindows()
-        return
+    return response
         
 def configure(_argv):
 
@@ -147,23 +162,17 @@ def configure(_argv):
     
 
 def main(_argv):
-    """
-    python object_tracker.py 
-    --weights ./checkpoints/yolov4-tiny-416
-    --model yolov4 
-    --video ./data/video/test.mp4 
-    --output ./outputs/tiny.avi 
-    --tiny
-    """
+    
     FLAGS.weights= "./checkpoints/yolov4-tiny-416"
     FLAGS.model="yolov4"
     FLAGS.tiny =True
     
 
-    saved_model_loaded,infer,input_size,STRIDES, ANCHORS, NUM_CLASS, XYSCALE =configure(_argv)
+    saved_model_loaded,infer,input_size,STRIDES, ANCHORS, NUM_CLASS, XYSCALE =configure([])
     imagePath="./data/testImage.jpg"
-    process_frame(imagePath,saved_model_loaded,infer,STRIDES, ANCHORS, NUM_CLASS, XYSCALE,input_size)
-    print("Fine")
+    response =do_image_processing(imagePath,saved_model_loaded,infer,STRIDES, ANCHORS, NUM_CLASS, XYSCALE,input_size)
+
+    print(response)
 
 if __name__ == '__main__':
     try:
